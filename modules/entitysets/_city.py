@@ -59,6 +59,8 @@ class City( Entity ):
         self.animations["online"] = { 'fps':1, 'frames':[0] }
         self.animations["offline"] = { 'fps':1, 'frames':[1] }
         self.destructionSound = group.playState.soundManager.getSound( "destruction.wav" )
+        self.explosionSound = group.playState.soundManager.getSound( "explosion.wav" )
+        #self.explosionSound.set_volume(0.2)
         if City.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
         self.destroyed = False
@@ -66,10 +68,13 @@ class City( Entity ):
             City.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
     
     def destroy( self ):
+        playState = self.playStateRef()
+        self.destructionSound.play(priority=1)
+        self.explosionSound.play(priority=1)
+        playState.gameLogicManager.__class__.shakeAmp += 5
         if self.destroyed:
             return None
         self.changeAnimation("offline")
-        playState = self.playStateRef()
         pop = playState.gameLogicManager.population
         cityCount = len( [ each for each in playState.gameLogicManager.cities if not each.destroyed ] )
         if cityCount == 1:
@@ -77,7 +82,6 @@ class City( Entity ):
         else:
             playState.gameLogicManager.adjustPopulation( -int(pop*((0.9+0.2*random.random())/cityCount)) )
         self.destroyed = True
-        self.destructionSound.play(priority=1)
 
     def update( self, dt ):
         Entity.update( self, dt )

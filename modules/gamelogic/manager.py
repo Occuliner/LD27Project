@@ -24,6 +24,7 @@ from picklestuff import loadPlayState
 from modules.hud.monitor import Monitor
 from modules.hud.ammoicon import AmmoIcon
 from modules.hud.label import HudLabel
+from modules.hud.blank import Blank
 from modules.hud.bar import Bar
 from gamelogicmanager import GameLogicManager
 
@@ -35,6 +36,9 @@ class ActualManager( GameLogicManager ):
     lasers = []
     cities = []
     preparedShots = []
+    shakeTimer = 0.0
+    shakeAmp = 0.0
+    onStartScreen = True
     def __init__( self, playState ):
         GameLogicManager.__init__( self, playState)
 
@@ -46,22 +50,31 @@ class ActualManager( GameLogicManager ):
     def postTick( self, dt ):
         GameLogicManager.postTick( self, dt )
         playState = self.playStateRef()
-        for eachShot in ActualManager.preparedShots[:]:
-            eachShot[0] += dt
-            if eachShot[0] > 0.0:
-                self.laserSound.play(priority=2)
-                for eachInfo in playState.space.segment_query(eachShot[1][0], eachShot[1][1]):
-                    if hasattr(eachInfo.shape, "entity"):
-                        if eachInfo.shape.entity.__class__.__name__ == "Missile":
-                            self.hitSound.play(priority=1)
-                            eachInfo.shape.entity.kill()
-                ActualManager.preparedShots.remove(eachShot)
+        ActualManager.shakeTimer += dt
+        if ActualManager.shakeAmp != 0.0:
+            ActualManager.shakeAmp -= dt*(ActualManager.shakeAmp-1.0/(ActualManager.shakeAmp))
+            ActualManager.shapeAmp = min(ActualManager.shakeAmp, 0.0)
+
+    def spawnStartScreen( self ):
+        playState = self.playStateRef()
+        playState.hudList.append( Blank( playState ) )
+        playState.hudList.append( HudLabel( (0, 0), "Sabotage", playState, pygame.Color(255,255,255) ) )
+        playState.hudList.append( HudLabel( (0, 0), "Press space to continue.", playState, pygame.Color(255,255,255) ) )
+        playState.hudList[1].rect.topleft = (800-playState.hudList[1].rect.w)/2, (600-playState.hudList[1].rect.h)/2-10
+        playState.hudList[2].rect.topleft = (800-playState.hudList[2].rect.w)/2, (600-playState.hudList[2].rect.h)/2+10
 
     def onLaunch( self ):
         GameLogicManager.onLaunch( self )
         playState = self.playStateRef()
+        self.spawnStartScreen()
+        pygame.mixer.music.load(os.path.join("data", "music", "heartbeat.ogg"))
+        pygame.mixer.music.play(-1)
+        
+    def loadGame( self ):
+        playState = self.playStateRef()
         newState = loadPlayState( os.path.join( "data", "maps", "empty" ), playState.floor.tileSet, playState.devMenuRef )
         playState.swap(newState)
+        ActualManager.onStartScreen = False
 
     def generateAmmoHud( self ):
         playState = self.playStateRef()
@@ -138,8 +151,6 @@ class ActualManager( GameLogicManager ):
                 target = ActualManager.lasers[random.randint(0, len(ActualManager.lasers)-1)]
             
             delta = target.rect.center[0]-loc[0], target.rect.center[1]-loc[1]
-            #length = math.hypot( delta[0], delta[1] )
-            #delta = delta[0]*(25.0/length), delta[1]*(25.0/length)
             missileClass( loc, delta, playState.genericStuffGroup )
 
     def onLoad( self ):
@@ -172,6 +183,3 @@ class ActualManager( GameLogicManager ):
         self.generateBarHud()
 
         self.spawnMissiles()
-
-        pygame.mixer.music.load(os.path.join("data", "music", "heartbeat.ogg"))
-        pygame.mixer.music.play(-1)

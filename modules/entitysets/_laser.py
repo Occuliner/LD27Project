@@ -59,6 +59,8 @@ class Laser( Entity ):
         self.animations["online"] = { 'fps':1, 'frames':[0] }
         self.animations["offline"] = { 'fps':1, 'frames':[1] }
         self.destructionSound = group.playState.soundManager.getSound( "destruction.wav" )
+        self.explosionSound = group.playState.soundManager.getSound( "explosion.wav" )
+        #self.explosionSound.set_volume(0.2)
         if Laser.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
         self.ammo = 8
@@ -71,6 +73,9 @@ class Laser( Entity ):
         self.ammo = 0
         self.playStateRef().gameLogicManager.generateAmmoHud()
         self.destructionSound.play(priority=1)
+        self.explosionSound.play(priority=1)
+        playState = self.playStateRef()
+        playState.gameLogicManager.__class__.shakeAmp += 5
 
     def update( self, dt ):
         self.coolDown -= dt

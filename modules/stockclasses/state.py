@@ -333,7 +333,6 @@ class PlayState:
     def draw( self, surface ):
         """Draw all the child entity groups in PlayState, returning changed area rects"""
         changeRects = []
-
         changeRects.append( surface.blit( self.floor.layers[0].image, self.floor.layers[0].rect.topleft ) )
         if not self.drawByFeet:
             for eachVal in self.drawOrder:

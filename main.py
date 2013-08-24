@@ -24,7 +24,7 @@ It creates the window, DevMenu, basic playState, an empty playerGroup.
 It then runs the main-loop. Rendering everything in the playState and 
 sending a dictionary of key inputs to the playerGroup in the playState."""
 
-import pygame, weakref, sys#, objgraph
+import pygame, weakref, math, sys
 
 #from pygame.locals import QUIT, KEYDOWN, K_UP, K_LEFT, K_RIGHT, K_DOWN, K_RETURN, KEYUP, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 
@@ -56,6 +56,8 @@ if int(cfg.getVal('fullscreen')) == 1:
     screen = pygame.display.set_mode( (cfg.getWidth(), cfg.getHeight()), pygame.FULLSCREEN )
 else:
     screen = pygame.display.set_mode( (cfg.getWidth(), cfg.getHeight()) )
+
+cheatScreen = pygame.Surface( (800, 600) ).convert()
 
 #pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
 
@@ -136,10 +138,13 @@ while not done:
 
     currentState.update( float(timer.get_time())/1000 )
 
-    updatedArea.extend( currentState.draw( screen ) )
+    updatedArea.extend( currentState.draw( cheatScreen ) )
     
     theDevMenu.update( float(timer.get_time())/1000 )
-    updatedArea.extend( theDevMenu.draw( screen ) )
+    updatedArea.extend( theDevMenu.draw( cheatScreen ) )
+
+    shakeDelta = math.sin(currentState.gameLogicManager.shakeTimer*20)*currentState.gameLogicManager.shakeAmp
+    screen.blit(cheatScreen, (0,shakeDelta))
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -209,6 +214,8 @@ while not done:
                 panD = False
             elif event.key == K_ESCAPE:
                 currentState.togglePaused()
+            elif event.key == K_SPACE and currentState.gameLogicManager.__class__.onStartScreen:
+                currentState.gameLogicManager.loadGame()
             
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
