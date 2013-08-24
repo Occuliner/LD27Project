@@ -19,24 +19,29 @@
 #    3. This notice may not be removed or altered from any source
 #    distribution.
 
-import pygame, os
+import pygame
 
 from imageload import loadImageNoAlpha
 
 from hudelement import HudElement
 
-class HudLabel(HudElement):
-    font = pygame.font.Font( os.path.join( "data", "fonts", "PD-tarzeau_-_Atari_Small.ttf" ), 16 )
-    def __init__( self, pos, text, playState, colour=None ):
-        self.text = text
-        if colour is None:
-            colour =  pygame.Color(0,0,0)
-        self.colour = colour
-        sheet = self.font.render( self.text, False, colour )
-        HudElement.__init__( self, playState, pos, sheet, False )
+class Bar(HudElement):
+    def __init__( self, laser, playState ):
+        self.laser = laser
+        sheet = self.generateImage()
+        HudElement.__init__( self, playState, (laser.rect.left, laser.rect.top-6), sheet, False )
+
+    def generateImage( self ):
+        img = pygame.Surface( (self.laser.width, 5) ).convert()
+        img.fill( pygame.Color(0, 255, 0 ) )
+        length = (self.laser.width-2)*(self.laser.coolDown/10)
+        img.fill( pygame.Color(0, 0, 0 ), pygame.Rect(self.laser.width-1-length, 1, length, 3) )
+        return img
 
     def regenerateImage( self ):
-        tmpLoc = self.rect.topleft
-        self.image = self.font.render( self.text, False, self.colour )
-        self.rect = self.image.get_rect()
-        self.rect.topleft = tmpLoc
+        self.image = self.generateImage()
+
+    def update( self, dt ):
+        HudElement.update( self, dt )
+        self.regenerateImage()
+        

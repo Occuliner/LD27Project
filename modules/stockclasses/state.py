@@ -38,6 +38,7 @@ from confighandler import ConfigHandler
 
 green = pygame.Color(0,255,0)
 darkGreen = pygame.Color(0, 127, 0)
+darkRed = pygame.Color(127, 0, 0)
 
 def callSpeshulEffect( space, arbiter, *args, **kwargs ):
     objA, objB = arbiter.shapes[0].entity, arbiter.shapes[1].entity
@@ -371,10 +372,13 @@ class PlayState:
 
         if len(  self.gameLogicManager.lasers ) > 0:
             pt1, pt2 = self.gameLogicManager.getCurAimLine()
-            pygame.draw.line( surface, green, pt1, pt2 )
+            pygame.draw.line( surface, darkGreen, pt1, pt2 )
 
         for eachShot in self.gameLogicManager.preparedShots:
-            pygame.draw.line( surface, darkGreen, eachShot[1][0], eachShot[1][1] )
+            pygame.draw.line( surface, green, eachShot[1][0], eachShot[1][1] )
+
+        #for eachMissile in [ each for each in self.genericStuffGroup.sprites() if each.__class__.__name__ == "Missile" ]:
+            #pygame.draw.line( surface, darkRed, eachMissile.getPosition(), eachMissile.startPos, 4 )
 
         for eachElement in self.hudList:
             eachElement.draw( surface )

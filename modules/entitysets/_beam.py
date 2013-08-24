@@ -20,39 +20,50 @@
 #    distribution.
 
 from entity import Entity
-import pygame
+import pygame, math
 
 from imageload import loadImageNoAlpha
 
-class Missile( Entity ):
+def queueCollideWithBeam( givenBeam, givenObject ):
+    curPlayState = givenObject.groups()[0].playState
+    curPlayState.postStepQueue.append( ( collideWithBeam, givenBeam, givenObject ) )
+
+def collideWithBeam( givenBeam, givenObject ):
+    if "Missile" in givenObject.__class__.__name__:
+        givenObject.kill()
+
+class Beam( Entity ):
     width = 4
-    height = 4
+    height = 16
 
     playStateGroup = "genericStuffGroup"
     setName = "genericstuff"
 
     sheet = pygame.Surface((width,height)).convert()
-    sheet.fill( pygame.Color( 255, 0, 0 ) )
+    sheet.fill( pygame.Color( 0, 255, 0 ) )
 
     instanceSpecificVars = None
 
     notEditable = True
+
+    specialCollision = queueCollideWithBeam
 
     collidable = True
     solid = False
     
     def __init__( self, pos, force, group=None, **kwargs ):
         Entity.__init__( self, pos, [0,0], None, group, pygame.Rect( 0, 0, self.width, self.height ), animated=True, **kwargs )
-        self.body.velocity_limit = 10
-        if Missile.instanceSpecificVars is None:
+        self.setRotation( math.atan( force[1]/force[0] )+math.pi/2 )
+        self.body.velocity_limit = 400
+        if Beam.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
         self.startPos = pos
         self.force = force
-        if Missile.instanceSpecificVars is None:
-            Missile.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
+        if Beam.instanceSpecificVars is None:
+            Beam.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
         self.body.apply_force(force)
 
     def update( self, dt ):
         Entity.update( self, dt )
 
-entities = { "Missile":Missile }
+entities = { "Beam":Beam }

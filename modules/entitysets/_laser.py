@@ -58,9 +58,11 @@ class Laser( Entity ):
         Entity.__init__( self, pos, [0,0], None, group, pygame.Rect( 0, 0, self.width, self.height ), animated=True, **kwargs )
         self.animations["online"] = { 'fps':1, 'frames':[0] }
         self.animations["offline"] = { 'fps':1, 'frames':[1] }
+        self.destructionSound = group.playState.soundManager.getSound( "destruction.wav" )
         if Laser.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
         self.ammo = 8
+        self.coolDown = 0.0
         if Laser.instanceSpecificVars is None:
             Laser.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
     
@@ -68,8 +70,10 @@ class Laser( Entity ):
         self.changeAnimation("offline")
         self.ammo = 0
         self.playStateRef().gameLogicManager.generateAmmoHud()
+        self.destructionSound.play(priority=1)
 
     def update( self, dt ):
+        self.coolDown -= dt
         Entity.update( self, dt )
 
 entities = { "Laser":Laser }

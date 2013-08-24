@@ -20,7 +20,7 @@
 #    distribution.
 
 from entity import Entity
-import pygame
+import pygame, random
 
 from imageload import loadImageNoAlpha
 
@@ -58,13 +58,26 @@ class City( Entity ):
         Entity.__init__( self, pos, [0,0], None, group, pygame.Rect( 0, 0, self.width, self.height ), animated=True, **kwargs )
         self.animations["online"] = { 'fps':1, 'frames':[0] }
         self.animations["offline"] = { 'fps':1, 'frames':[1] }
+        self.destructionSound = group.playState.soundManager.getSound( "destruction.wav" )
         if City.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
+        self.destroyed = False
         if City.instanceSpecificVars is None:
             City.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
     
     def destroy( self ):
+        if self.destroyed:
+            return None
         self.changeAnimation("offline")
+        playState = self.playStateRef()
+        pop = playState.gameLogicManager.population
+        cityCount = len( [ each for each in playState.gameLogicManager.cities if not each.destroyed ] )
+        if cityCount == 1:
+            playState.gameLogicManager.adjustPopulation( -pop )
+        else:
+            playState.gameLogicManager.adjustPopulation( -int(pop*((0.9+0.2*random.random())/cityCount)) )
+        self.destroyed = True
+        self.destructionSound.play(priority=1)
 
     def update( self, dt ):
         Entity.update( self, dt )
