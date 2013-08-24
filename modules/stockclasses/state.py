@@ -19,7 +19,7 @@
 #    3. This notice may not be removed or altered from any source
 #    distribution.
 
-import pygame, extern_modules.pymunk as pymunk, sys, gc, logging, math
+import pygame, extern_modules.pymunk as pymunk, sys, gc, logging
 import extern_modules.pygnetic as pygnetic
 #from pygame.locals import *
 from linevisualiser import LineVisualiser
@@ -37,6 +37,7 @@ from confighandler import ConfigHandler
 """This module defines the PlayState class."""
 
 green = pygame.Color(0,255,0)
+darkGreen = pygame.Color(0, 127, 0)
 
 def callSpeshulEffect( space, arbiter, *args, **kwargs ):
     objA, objB = arbiter.shapes[0].entity, arbiter.shapes[1].entity
@@ -369,12 +370,11 @@ class PlayState:
         changeRects.extend( self.lineVisualiser.draw( surface, (self.panX, self.panY) ) )
 
         if len(  self.gameLogicManager.lasers ) > 0:
-            pt = pygame.mouse.get_pos()
-            pt2 = self.gameLogicManager.getSelectedLaser().rect.center
-            coeff = 800.0/math.hypot((pt[0]-pt2[0]), (pt[1]-pt2[1]))
-            pt3 = pt2[0]+(pt[0]-pt2[0])*coeff, pt2[1]+(pt[1]-pt2[1])*coeff
-            
-            pygame.draw.line( surface, green, pt2, pt3 )
+            pt1, pt2 = self.gameLogicManager.getCurAimLine()
+            pygame.draw.line( surface, green, pt1, pt2 )
+
+        for eachShot in self.gameLogicManager.preparedShots:
+            pygame.draw.line( surface, darkGreen, eachShot[1][0], eachShot[1][1] )
 
         for eachElement in self.hudList:
             eachElement.draw( surface )

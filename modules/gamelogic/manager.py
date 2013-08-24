@@ -19,19 +19,21 @@
 #    3. This notice may not be removed or altered from any source
 #    distribution.
 
-import os
+import os, math, pygame
 from picklestuff import loadPlayState
 from modules.hud.monitor import Monitor
 from modules.hud.ammoicon import AmmoIcon
+from modules.hud.label import Label
 from gamelogicmanager import GameLogicManager
 
 class ActualManager( GameLogicManager ):
     population = "3000000"
+    populationCounter = None
     ammoHudElements = []
     selectedLaserNum = 0
     lasers = []
     cities = []
-
+    preparedShots = []
     def spawnMonitor( self ):
         playState = self.playStateRef()
         mon = Monitor( playState )
@@ -40,6 +42,11 @@ class ActualManager( GameLogicManager ):
     def postTick( self, dt ):
         GameLogicManager.postTick( self, dt )
         playState = self.playStateRef()
+        for eachShot in ActualManager.preparedShots[:]:
+            eachShot[0] += dt
+            if eachShot[0] > 10:
+                #Fire
+                ActualManager.preparedShots.remove(eachShot)
 
     def onLaunch( self ):
         GameLogicManager.onLaunch( self )
@@ -62,10 +69,41 @@ class ActualManager( GameLogicManager ):
     def getSelectedLaser( self ):
         return ActualManager.lasers[ActualManager.selectedLaserNum]
 
+    def moveToLeftLaser( self ):
+        ActualManager.selectedLaserNum = max(ActualManager.selectedLaserNum-1,0)
+    
+    def moveToRightLaser( self ):
+        ActualManager.selectedLaserNum = min(ActualManager.selectedLaserNum+1,len(ActualManager.lasers)-1)
+
+    def getCurAimLine( self ):
+        pt = pygame.mouse.get_pos()
+        pt2 = self.getSelectedLaser().rect.center
+        lineLen = math.hypot((pt[0]-pt2[0]), (pt[1]-pt2[1]))
+        if lineLen == 0:
+           return (pt2, pt2)
+        coeff = 800.0/lineLen
+        pt3 = pt2[0]+(pt[0]-pt2[0])*coeff, pt2[1]+(pt[1]-pt2[1])*coeff
+        return (pt2, pt3)
+
+    def shoot( self ):
+        curLaser = ActualManager.lasers[ActualManager.selectedLaserNum]
+        if curLaser.ammo < 1:
+            return None
+        line = self.getCurAimLine()
+        ActualManager.preparedShots.append( [0.0, line] )
+        curLaser.ammo -= 1
+        self.generateAmmoHud()
+
+    def addPopulationCounter( self ):
+        playState = self.playStateRef()
+        ActualManager.populationCounter = Label( (80, 500), "Estimated population: " +str(ActualManager.population), playState, pygame.Color(255,255,255) )
+        playState.hudList.append(ActualManager.populationCounter)
+
     def onLoad( self ):
         GameLogicManager.onLoad( self )
         playState = self.playStateRef()
         self.spawnMonitor()
+        self.addPopulationCounter()
         
         mapClass = playState.devMenuRef().masterEntitySet.getEntityClass("Map")
         mapClass( playState.genericStuffGroup )

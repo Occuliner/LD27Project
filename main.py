@@ -200,8 +200,10 @@ while not done:
             elif event.key == K_w:
                 panU = False
             elif event.key == K_a:
+                currentState.gameLogicManager.moveToLeftLaser()
                 panL = False
             elif event.key == K_d:
+                currentState.gameLogicManager.moveToRightLaser()
                 panR = False
             elif event.key == K_s:
                 panD = False
@@ -209,6 +211,8 @@ while not done:
                 currentState.togglePaused()
             
         elif event.type == MOUSEBUTTONDOWN:
+            if event.button == 1:
+                currentState.gameLogicManager.shoot()
             curMousePos = event.pos[0] + currentState.panX, event.pos[1] + currentState.panY
             if event.button == 1 and theDevMenu.open:
                 theDevMenu.clicks['mouse1down'].append( event.pos )

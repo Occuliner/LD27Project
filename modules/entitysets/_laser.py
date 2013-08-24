@@ -54,13 +54,14 @@ class Laser( Entity ):
         self.animations["offline"] = { 'fps':1, 'frames':[1] }
         if Laser.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
-        self.ammo = 5
+        self.ammo = 8
         if Laser.instanceSpecificVars is None:
             Laser.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
     
     def destroy( self ):
         self.changeAnimation("offline")
         self.ammo = 0
+        self.playStateRef().gameLogicManager.generateAmmoHud()
 
     def update( self, dt ):
         Entity.update( self, dt )
