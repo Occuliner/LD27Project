@@ -214,7 +214,7 @@ while not done:
                 panD = False
             elif event.key == K_ESCAPE:
                 currentState.togglePaused()
-            elif event.key == K_SPACE and currentState.gameLogicManager.__class__.onStartScreen:
+            elif event.key == K_SPACE and (currentState.gameLogicManager.__class__.onStartScreen or currentState.gameLogicManager.endGameNotice is not None):
                 currentState.gameLogicManager.loadGame()
             
         elif event.type == MOUSEBUTTONDOWN:

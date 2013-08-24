@@ -65,6 +65,7 @@ class Laser( Entity ):
             attrList = list( self.__dict__.keys() )
         self.ammo = 8
         self.coolDown = 0.0
+        self.destroyed = False
         if Laser.instanceSpecificVars is None:
             Laser.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
     
@@ -76,6 +77,7 @@ class Laser( Entity ):
         self.explosionSound.play(priority=1)
         playState = self.playStateRef()
         playState.gameLogicManager.__class__.shakeAmp += 5
+        self.destroyed = True
 
     def update( self, dt ):
         self.coolDown -= dt

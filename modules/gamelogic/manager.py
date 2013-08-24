@@ -29,6 +29,7 @@ from modules.hud.bar import Bar
 from gamelogicmanager import GameLogicManager
 
 class ActualManager( GameLogicManager ):
+    displayedPopulation = 3000000
     population = 3000000
     populationCounter = None
     ammoHudElements = []
@@ -39,6 +40,11 @@ class ActualManager( GameLogicManager ):
     shakeTimer = 0.0
     shakeAmp = 0.0
     onStartScreen = True
+    waveNumber = 0
+    waveTimer = 3.0
+    waveLabel = None
+    endGameNotice = None
+    otherEndGameNotice = None
     def __init__( self, playState ):
         GameLogicManager.__init__( self, playState)
 
@@ -54,11 +60,40 @@ class ActualManager( GameLogicManager ):
         if ActualManager.shakeAmp != 0.0:
             ActualManager.shakeAmp -= dt*(ActualManager.shakeAmp-1.0/(ActualManager.shakeAmp))
             ActualManager.shapeAmp = min(ActualManager.shakeAmp, 0.0)
-
+        deltaPop = ActualManager.displayedPopulation-ActualManager.population
+        if deltaPop != 0:
+            ActualManager.displayedPopulation = max( ActualManager.population, 
+                ActualManager.displayedPopulation - max(random.randint(int(deltaPop*0.1), int(deltaPop*0.2) ), 127) )
+            ActualManager.populationCounter.text = "Estimated population: " +str(ActualManager.displayedPopulation)
+            ActualManager.populationCounter.regenerateImage()
+        
+        if len( [ each for each in  playState.sprites() if each.__class__.__name__ == "Missile" ] ) < 1 and not ActualManager.onStartScreen:
+            if len( [ each for each in ActualManager.cities if not each.destroyed ] ) < 1 and ActualManager.endGameNotice is None:
+                ActualManager.endGameNotice = HudLabel( (0, 0), "The End", playState, pygame.Color(255,255,255) )
+                ActualManager.endGameNotice.rect.topleft = (800-ActualManager.endGameNotice.rect.w)/2, (600-ActualManager.endGameNotice.rect.h)/2
+                ActualManager.otherEndGameNotice = HudLabel( (0, 0), "Press space to restart.", playState, pygame.Color(255,255,255) )
+                ActualManager.otherEndGameNotice.rect.topleft = (800-ActualManager.otherEndGameNotice.rect.w)/2, (600-ActualManager.otherEndGameNotice.rect.h)/2 + 20
+                playState.hudList.extend( [ActualManager.endGameNotice, ActualManager.otherEndGameNotice] )
+            elif ActualManager.waveLabel is None and ActualManager.endGameNotice is None:
+                ActualManager.waveNumber += 1
+                ActualManager.waveLabel = HudLabel( (0, 0), "Wave "+str(ActualManager.waveNumber), playState, pygame.Color(255,255,255) )
+                ActualManager.waveLabel.rect.topleft = (800-ActualManager.waveLabel.rect.w)/2, (600-ActualManager.waveLabel.rect.h)/2
+                playState.hudList.append( ActualManager.waveLabel )
+                for eachLaser in ActualManager.lasers:
+                    if not eachLaser.destroyed:
+                        eachLaser.ammo = 8
+                self.generateAmmoHud()
+            ActualManager.waveTimer -= dt
+            if ActualManager.waveTimer < 0.0 and ActualManager.endGameNotice is None:
+                ActualManager.waveTimer = 3.0
+                self.spawnMissiles()
+                playState.hudList.remove( ActualManager.waveLabel )
+                ActualManager.waveLabel = None
+            
     def spawnStartScreen( self ):
         playState = self.playStateRef()
         playState.hudList.append( Blank( playState ) )
-        playState.hudList.append( HudLabel( (0, 0), "Sabotage", playState, pygame.Color(255,255,255) ) )
+        playState.hudList.append( HudLabel( (0, 0), "End times", playState, pygame.Color(255,255,255) ) )
         playState.hudList.append( HudLabel( (0, 0), "Press space to continue.", playState, pygame.Color(255,255,255) ) )
         playState.hudList[1].rect.topleft = (800-playState.hudList[1].rect.w)/2, (600-playState.hudList[1].rect.h)/2-10
         playState.hudList[2].rect.topleft = (800-playState.hudList[2].rect.w)/2, (600-playState.hudList[2].rect.h)/2+10
@@ -71,6 +106,22 @@ class ActualManager( GameLogicManager ):
         pygame.mixer.music.play(-1)
         
     def loadGame( self ):
+        ActualManager.displayedPopulation = 3000000
+        ActualManager.population = 3000000
+        ActualManager.populationCounter = None
+        ActualManager.ammoHudElements = []
+        ActualManager.selectedLaserNum = 0
+        ActualManager.lasers = []
+        ActualManager.cities = []
+        ActualManager.preparedShots = []
+        ActualManager.shakeTimer = 0.0
+        ActualManager.shakeAmp = 0.0
+        ActualManager.onStartScreen = True
+        ActualManager.waveNumber = 0
+        ActualManager.waveTimer = 3.0
+        ActualManager.waveLabel = None
+        ActualManager.endGameNotice = None
+        ActualManager.otherEndGameNotice = None
         playState = self.playStateRef()
         newState = loadPlayState( os.path.join( "data", "maps", "empty" ), playState.floor.tileSet, playState.devMenuRef )
         playState.swap(newState)
@@ -133,8 +184,6 @@ class ActualManager( GameLogicManager ):
 
     def adjustPopulation( self, change ):
         ActualManager.population += change
-        ActualManager.populationCounter.text = "Estimated population: " +str(ActualManager.population)
-        ActualManager.populationCounter.regenerateImage()
 
     def spawnMissiles( self ):
         playState = self.playStateRef()
@@ -142,13 +191,10 @@ class ActualManager( GameLogicManager ):
         missileClass = playState.devMenuRef().masterEntitySet.getEntityClass("Missile")
         
         missileCount = random.randint(5, 10)
+        targets = [ each for each in ActualManager.cities+ActualManager.lasers if not each.destroyed ]
         for val in range(missileCount):
             loc = (80+640*random.random(), 80)
-            target = None
-            if random.randint(0,1) == 1:
-                target = ActualManager.cities[random.randint(0, len(ActualManager.cities)-1)]
-            else:
-                target = ActualManager.lasers[random.randint(0, len(ActualManager.lasers)-1)]
+            target = targets[random.randint(0, len(targets)-1)]
             
             delta = target.rect.center[0]-loc[0], target.rect.center[1]-loc[1]
             missileClass( loc, delta, playState.genericStuffGroup )
@@ -164,7 +210,8 @@ class ActualManager( GameLogicManager ):
 
         laserClass = playState.devMenuRef().masterEntitySet.getEntityClass("Laser")
         ActualManager.lasers = [laserClass( (100, 460), playState.genericStuffGroup ),
-        laserClass( (400, 480), playState.genericStuffGroup ),
+        laserClass( (320, 480), playState.genericStuffGroup ),
+        laserClass( (480, 480), playState.genericStuffGroup ),
         laserClass( (640, 420), playState.genericStuffGroup )]
 
         cityClass = playState.devMenuRef().masterEntitySet.getEntityClass("City")
@@ -182,4 +229,4 @@ class ActualManager( GameLogicManager ):
         self.generateAmmoHud()
         self.generateBarHud()
 
-        self.spawnMissiles()
+        #self.spawnMissiles()
