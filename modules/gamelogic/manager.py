@@ -19,7 +19,7 @@
 #    3. This notice may not be removed or altered from any source
 #    distribution.
 
-import os, math, pygame
+import os, math, pygame, random
 from picklestuff import loadPlayState
 from modules.hud.monitor import Monitor
 from modules.hud.ammoicon import AmmoIcon
@@ -99,6 +99,30 @@ class ActualManager( GameLogicManager ):
         ActualManager.populationCounter = Label( (80, 500), "Estimated population: " +str(ActualManager.population), playState, pygame.Color(255,255,255) )
         playState.hudList.append(ActualManager.populationCounter)
 
+    def adjustPopulation( self, change ):
+        ActualManager.population += change
+        ActualManager.populationCounter.text = "Estimated population: " +str(ActualManager.population)
+        ActualManager.populationCounter.regenerateImage()
+
+    def spawnMissiles( self ):
+        playState = self.playStateRef()
+
+        missileClass = playState.devMenuRef().masterEntitySet.getEntityClass("Missile")
+        
+        missileCount = random.randint(5, 10)
+        for val in range(missileCount):
+            loc = (80+640*random.random(), 80)
+            target = None
+            if random.randint(0,1) == 1:
+                target = ActualManager.cities[random.randint(0, len(ActualManager.cities)-1)]
+            else:
+                target = ActualManager.lasers[random.randint(0, len(ActualManager.lasers)-1)]
+            
+            delta = target.rect.center[0]-loc[0], target.rect.center[1]-loc[1]
+            #length = math.hypot( delta[0], delta[1] )
+            #delta = delta[0]*(25.0/length), delta[1]*(25.0/length)
+            missileClass( loc, delta, playState.genericStuffGroup )
+
     def onLoad( self ):
         GameLogicManager.onLoad( self )
         playState = self.playStateRef()
@@ -123,3 +147,5 @@ class ActualManager( GameLogicManager ):
         cityClass( (670, 420), playState.genericStuffGroup )]
 
         self.generateAmmoHud()
+
+        self.spawnMissiles()

@@ -24,8 +24,14 @@ import pygame
 
 from imageload import loadImageNoAlpha
 
+def queueCollideWithCity( givenCity, givenObject ):
+    curPlayState = givenObject.groups()[0].playState
+    curPlayState.postStepQueue.append( ( collideWithCity, givenCity, givenObject ) )
+
 def collideWithCity( givenCity, givenObject ):
-    givenCity.destroy()
+    if "Missile" in givenObject.__class__.__name__:
+        givenCity.destroy()
+        givenObject.kill()
 
 class City( Entity ):
     width = 20
@@ -46,7 +52,7 @@ class City( Entity ):
     collidable = True
     solid = False
 
-    specialCollision = collideWithCity
+    specialCollision = queueCollideWithCity
     
     def __init__( self, pos, group=None, **kwargs ):
         Entity.__init__( self, pos, [0,0], None, group, pygame.Rect( 0, 0, self.width, self.height ), animated=True, **kwargs )

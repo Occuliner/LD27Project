@@ -24,26 +24,15 @@ import pygame
 
 from imageload import loadImageNoAlpha
 
-def queueCollideWithLaser( givenLaser, givenObject ):
-    curPlayState = givenObject.groups()[0].playState
-    curPlayState.postStepQueue.append( ( collideWithLaser, givenLaser, givenObject ) )
-
-def collideWithLaser( givenLaser, givenObject ):
-    if "Missile" in givenObject.__class__.__name__:
-        givenLaser.destroy()
-        givenObject.kill()
-
-class Laser( Entity ):
-    width = 20
-    height = 20
+class Missile( Entity ):
+    width = 4
+    height = 4
 
     playStateGroup = "genericStuffGroup"
     setName = "genericstuff"
 
-    sheetFileName = "laser.png"
-    sheet = loadImageNoAlpha( sheetFileName )
-    colourKey = pygame.Color(255, 0, 255)
-    sheet.set_colorkey(colourKey)
+    sheet = pygame.Surface((width,height)).convert()
+    sheet.fill( pygame.Color( 255, 0, 0 ) )
 
     instanceSpecificVars = None
 
@@ -51,25 +40,22 @@ class Laser( Entity ):
 
     collidable = True
     solid = False
-
-    specialCollision = queueCollideWithLaser
     
-    def __init__( self, pos, group=None, **kwargs ):
+    def __init__( self, pos, force, group=None, **kwargs ):
         Entity.__init__( self, pos, [0,0], None, group, pygame.Rect( 0, 0, self.width, self.height ), animated=True, **kwargs )
-        self.animations["online"] = { 'fps':1, 'frames':[0] }
-        self.animations["offline"] = { 'fps':1, 'frames':[1] }
-        if Laser.instanceSpecificVars is None:
+        self.body.velocity_limit = 10
+        if Missile.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
-        self.ammo = 8
-        if Laser.instanceSpecificVars is None:
-            Laser.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
-    
-    def destroy( self ):
-        self.changeAnimation("offline")
-        self.ammo = 0
-        self.playStateRef().gameLogicManager.generateAmmoHud()
+        self.startPos = pos
+        self.force = force
+        if Missile.instanceSpecificVars is None:
+            Missile.instanceSpecificVars = dict( [ ( eachKey, eachVal ) for eachKey, eachVal in self.__dict__.items() if eachKey not in attrList ] )
+        self.body.apply_force(force)
 
     def update( self, dt ):
+        #print self.getPosition(), self.body.velocity
+        #if self.body.velocity.length != 0:
+        #    print self.body.velocity
         Entity.update( self, dt )
 
-entities = { "Laser":Laser }
+entities = { "Missile":Missile }
