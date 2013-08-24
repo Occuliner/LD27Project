@@ -141,7 +141,6 @@ while not done:
     theDevMenu.update( float(timer.get_time())/1000 )
     updatedArea.extend( theDevMenu.draw( screen ) )
 
-
     for event in pygame.event.get():
         if event.type == QUIT:
             if currentState.isHost or currentState.isClient:

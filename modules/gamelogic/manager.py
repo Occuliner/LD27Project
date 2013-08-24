@@ -19,8 +19,69 @@
 #    3. This notice may not be removed or altered from any source
 #    distribution.
 
+import os
+from picklestuff import loadPlayState
+from modules.hud.monitor import Monitor
+from modules.hud.ammoicon import AmmoIcon
 from gamelogicmanager import GameLogicManager
 
 class ActualManager( GameLogicManager ):
-    """Game specific stuff is implemented here, of course, in the base THM code, it does nothing."""
-    pass
+    population = "3000000"
+    ammoHudElements = []
+    selectedLaserNum = 0
+    lasers = []
+    cities = []
+
+    def spawnMonitor( self ):
+        playState = self.playStateRef()
+        mon = Monitor( playState )
+        playState.hudList.append(mon)
+
+    def postTick( self, dt ):
+        GameLogicManager.postTick( self, dt )
+        playState = self.playStateRef()
+
+    def onLaunch( self ):
+        GameLogicManager.onLaunch( self )
+        playState = self.playStateRef()
+        newState = loadPlayState( os.path.join( "data", "maps", "empty" ), playState.floor.tileSet, playState.devMenuRef )
+        playState.swap(newState)
+
+    def generateAmmoHud( self ):
+        playState = self.playStateRef()
+        [ playState.hudList.remove(each) for each in ActualManager.ammoHudElements if each in playState.hudList ]
+        ActualManager.ammoHudElements = []
+        for eachLaser in [ each for each in playState.genericStuffGroup if "Laser" in each.__class__.__name__ ]:
+            x = eachLaser.rect.x-8
+            y = eachLaser.rect.bottom
+            for ammoNum in range( min(eachLaser.ammo, 10) ):
+                inst = AmmoIcon( (x+(8*(ammoNum%5)),y+(9*(ammoNum/5)) ), playState )
+                ActualManager.ammoHudElements.append( inst )
+        playState.hudList.extend( ActualManager.ammoHudElements )
+
+    def getSelectedLaser( self ):
+        return ActualManager.lasers[ActualManager.selectedLaserNum]
+
+    def onLoad( self ):
+        GameLogicManager.onLoad( self )
+        playState = self.playStateRef()
+        self.spawnMonitor()
+        
+        mapClass = playState.devMenuRef().masterEntitySet.getEntityClass("Map")
+        mapClass( playState.genericStuffGroup )
+
+        laserClass = playState.devMenuRef().masterEntitySet.getEntityClass("Laser")
+        ActualManager.lasers = [laserClass( (100, 460), playState.genericStuffGroup ),
+        laserClass( (400, 480), playState.genericStuffGroup ),
+        laserClass( (640, 420), playState.genericStuffGroup )]
+
+        cityClass = playState.devMenuRef().masterEntitySet.getEntityClass("City")
+        ActualManager.cities = [cityClass( (150, 460), playState.genericStuffGroup ),
+        cityClass( (250, 465), playState.genericStuffGroup ),
+        cityClass( (350, 470), playState.genericStuffGroup ),
+        cityClass( (450, 480), playState.genericStuffGroup ),
+        cityClass( (540, 480), playState.genericStuffGroup ),
+        cityClass( (600, 460), playState.genericStuffGroup ),
+        cityClass( (670, 420), playState.genericStuffGroup )]
+
+        self.generateAmmoHud()

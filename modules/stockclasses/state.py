@@ -19,7 +19,7 @@
 #    3. This notice may not be removed or altered from any source
 #    distribution.
 
-import pygame, extern_modules.pymunk as pymunk, sys, gc, logging
+import pygame, extern_modules.pymunk as pymunk, sys, gc, logging, math
 import extern_modules.pygnetic as pygnetic
 #from pygame.locals import *
 from linevisualiser import LineVisualiser
@@ -35,6 +35,8 @@ from getres import getResolution
 from confighandler import ConfigHandler
 
 """This module defines the PlayState class."""
+
+green = pygame.Color(0,255,0)
 
 def callSpeshulEffect( space, arbiter, *args, **kwargs ):
     objA, objB = arbiter.shapes[0].entity, arbiter.shapes[1].entity
@@ -123,7 +125,7 @@ class PlayState:
         self.paused = False
         self.keyboardInputEnabled = False
         self.deleteLastChar = False
-        self.checkFocus = True
+        self.checkFocus = False
 	self.pausedByFocus = False
 
         #So this is quite an important boolean.
@@ -365,6 +367,14 @@ class PlayState:
             del tmpDrawGroup
         
         changeRects.extend( self.lineVisualiser.draw( surface, (self.panX, self.panY) ) )
+
+        if len(  self.gameLogicManager.lasers ) > 0:
+            pt = pygame.mouse.get_pos()
+            pt2 = self.gameLogicManager.getSelectedLaser().rect.center
+            coeff = 800.0/math.hypot((pt[0]-pt2[0]), (pt[1]-pt2[1]))
+            pt3 = pt2[0]+(pt[0]-pt2[0])*coeff, pt2[1]+(pt[1]-pt2[1])*coeff
+            
+            pygame.draw.line( surface, green, pt2, pt3 )
 
         for eachElement in self.hudList:
             eachElement.draw( surface )
