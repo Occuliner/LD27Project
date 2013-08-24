@@ -43,7 +43,7 @@ class Missile( Entity ):
     
     def __init__( self, pos, force, group=None, **kwargs ):
         Entity.__init__( self, pos, [0,0], None, group, pygame.Rect( 0, 0, self.width, self.height ), animated=True, **kwargs )
-        self.body.velocity_limit = 100
+        self.body.velocity_limit = 20
         if Missile.instanceSpecificVars is None:
             attrList = list( self.__dict__.keys() )
         self.startPos = pos
